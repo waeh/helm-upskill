@@ -264,7 +264,7 @@ These are Kubernetes resources that span multiple components, like network polic
 
 There are some resources in the subchart that we want to add to the global resources.
 
-Remove the ingress.yaml resource to the global scope, in umbrella/templates. Create a new ingress resource in the global resources:
+Remove the ingress.yaml resource in umbrella/charts/myapp/templates. Create a new ingress resource in the global resources:
 
 ```yaml
 # umbrella/templates/ingress.yaml
@@ -298,7 +298,7 @@ spec:
               number: 8080
 ```
 
-Lets also create a Global network policy and a namespace level RBAC:
+Lets also create a Global network policy, while we're at it:
 
 ```yaml
 # umbrella/templates/network-policy.yaml
