@@ -91,7 +91,7 @@ helm create myapp
 This creates a `myapp/` directory with the standard chart structure. You can think of this as representing your main application component (frontend, backend, or whatever your primary service is).
 
 ### Step 2: Add Subchart to Umbrella Chart
-Modify `umbrella-chart/Chart.yaml` to include the application chart as a dependency:
+Modify `umbrella/Chart.yaml` to include the application chart as a dependency:
 
 ```yaml
 apiVersion: v2
@@ -108,9 +108,9 @@ dependencies:
   # Add more dependencies here as needed
 ```
 
-Move the `myapp` chart into the `umbrella-chart/charts/` directory:
+Move the `myapp` chart into the `umbrella/charts/` directory:
 ```bash
-mv myapp umbrella-chart/charts/
+mv myapp umbrella/charts/
 ```
 
 ### Step 3: Redesign Umbrella values.yaml for Abstraction
@@ -133,12 +133,12 @@ The umbrella chart's `templates/` directory should contain:
 - Conditional logic for enabling/disabling components
 - Any cross-component resources (like network policies)
 
-For now, you can remove the default templates from `umbrella-chart/templates/` since the umbrella won't deploy anything directly.
+For now, you can remove the default templates from `umbrella/templates/` since the umbrella won't deploy anything directly.
 
 ### Step 5: Test with helm template
 ```bash
 # Update dependencies
-cd umbrella-chart
+cd umbrella
 helm dependency update
 
 # Test rendering
@@ -202,7 +202,7 @@ helm template umbrella .
 ```
 ### 3. Global values
 
-Let's use the values defined in `umbrella-chart/values.yaml`. You have:
+Let's use the values defined in `umbrella/values.yaml`. You have:
 
 ```yaml
 global:
@@ -267,7 +267,7 @@ There are some resources in the subchart that we want to add to the global resou
 Remove the ingress.yaml resource to the global scope, in umbrella/templates. Create a new ingress resource in the global resources:
 
 ```yaml
-# umbrella-chart/templates/ingress.yaml
+# umbrella/templates/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -301,7 +301,7 @@ spec:
 Lets also create a Global network policy and a namespace level RBAC:
 
 ```yaml
-# umbrella-chart/templates/network-policy.yaml
+# umbrella/templates/network-policy.yaml
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -365,7 +365,7 @@ A pod runs as a ServiceAccount. The RoleBinding says: *"This ServiceAccount is a
 Add an `rbac` section to your umbrella `values.yaml`:
 
 ```yaml
-# umbrella-chart/values.yaml
+# umbrella/values.yaml
 rbac:
   create: true
 
@@ -381,14 +381,14 @@ A Role lists **rules** — each rule says which API groups, resources, and verbs
 Create this file:
 
 ```yaml
-# umbrella-chart/templates/role.yaml
+# umbrella/templates/role.yaml
 {{- if .Values.rbac.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "umbrella-chart.fullname" . }}-app-role
+  name: {{ include "umbrella.fullname" . }}-app-role
   labels:
-    {{- include "umbrella-chart.labels" . | nindent 4 }}
+    {{- include "umbrella.labels" . | nindent 4 }}
 rules:
   # Allow pods to read ConfigMaps in this namespace
   - apiGroups: [""]
@@ -511,7 +511,7 @@ helm template umbrella . -s charts/myapp/templates/deployment.yaml
 The PDB belongs to the **subchart** because each component has its own availability requirements. Add to the myapp `values.yaml`:
 
 ```yaml
-# umbrella-chart/charts/myapp/values.yaml
+# umbrella/charts/myapp/values.yaml
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
@@ -520,7 +520,7 @@ podDisruptionBudget:
 
 ### 2. Create the PDB template
 
-Create `umbrella-chart/charts/myapp/templates/poddisruptionbudget.yaml`:
+Create `umbrella/charts/myapp/templates/poddisruptionbudget.yaml`:
 
 ```yaml
 {{- if .Values.podDisruptionBudget.enabled }}
