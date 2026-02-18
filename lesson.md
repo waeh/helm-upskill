@@ -57,7 +57,7 @@ umbrella/
 ### Step 4: Test Your Chart
 Use `helm template` to see what manifests your chart would generate:
 ```bash
-helm template my-release ./umbrella.chart
+helm template my-release ./umbrella
 ```
 
 ### Common Pitfalls
@@ -66,7 +66,7 @@ helm template my-release ./umbrella.chart
 - Use helper templates for reusable logic
 
 ### Next Steps
-Once you've created your basic chart, we'll explore how to turn it into an umbrella chart that can manage multiple components. Try creating the chart now and let me know what you see!
+Once you've created your basic chart, we'll explore how to turn it into an umbrella chart that can manage multiple components.
 
 ## Lesson 2: Building an Umbrella Chart Structure
 
@@ -220,7 +220,15 @@ Verify with:
 helm template umbrella . 
 ```
 
-Since we also want to use the environment label in myapp sub chart aswell, add the same label to the myapp _helpers.tpl file.
+Since we also want to use the environment label in myapp sub chart aswell, add the same label to the myapp _helpers.tpl file, but we also want the chart to be able
+to be deployed independently and we need to guard for the non-existence of a global value:
+```yaml
+{{- if .Values.global }}
+environment: {{ .Values.global.environment }}
+{{- else }}
+environment: {{ .Values.environment }}
+{{- end }}
+```
 
 Verify with:
 ```bash 
@@ -319,7 +327,7 @@ spec:
           app: myapp
     ports:
     - protocol: TCP
-      port: {{ .Values.myapp.port }}
+      port: {{ .Values.myapp.service.port }}
   {{- end }}
   - from:
     - podSelector:
@@ -431,15 +439,9 @@ subjects:
   # Bind to myapp's service account
   {{- if .Values.myapp.enabled }}
   - kind: ServiceAccount
-    name: {{ .Release.Name }}-myapp    # subchart's auto-generated SA
+    name: {{ .Values.myapp.serviceAccount.name }}
     namespace: {{ .Release.Namespace }}
   {{- end }}
-  # Add more subjects here as you add more subcharts:
-  # {{- if .Values.frontend.enabled }}
-  # - kind: ServiceAccount
-  #   name: {{ .Release.Name }}-frontend
-  #   namespace: {{ .Release.Namespace }}
-  # {{- end }}
 {{- end }}
 ```
 
@@ -453,7 +455,7 @@ helm template umbrella . -s templates/role.yaml
 helm template umbrella . -s templates/rolebinding.yaml
 
 # Confirm they disappear when rbac.create is false:
-helm template umbrella . --set rbac.create=false -s templates/role.yaml
+helm template umbrella . --set rbac.create=false
 # Should output empty
 ```
 
@@ -475,15 +477,12 @@ Workload Identity lets pods authenticate to Azure services (Key Vault, Storage, 
 1. **Annotate the ServiceAccount** with the Managed Identity's client ID
 2. **Label the pod** with `azure.workload.identity/use: "true"`
 
-### 1. Add workload identity values to umbrella values.yaml
+### 1. Add workload identity values to myapp values.yaml
 
-Add the Workload Identity config under the `myapp:` section in the umbrella `values.yaml`:
+Add the Workload Identity config in the myapp `values.yaml`:
 
 ```yaml
-# umbrella/values.yaml
-myapp:
-  enabled: true
-
+# umbrella/charts/myapp/values.yaml
   # Workload Identity — set clientId to your Azure Managed Identity
   serviceAccount:
     create: true
@@ -494,14 +493,14 @@ myapp:
     azure.workload.identity/use: "true"
 ```
 
-Verify that the serviceaccount is created correctly with the workload identiy annotations and pod labels: 
+Verify that the serviceaccount is created correctly with the workload identity annotations and pod labels:
 
 ```bash
-helm template umbrella . -s charts/myapp/templates/serviceaccount.yaml
+helm template myapp ./charts/myapp -s templates/serviceaccount.yaml
 ```
 
 ```bash
-helm template umbrella . -s charts/myapp/templates/deployment.yaml
+helm template myapp ./charts/myapp -s templates/deployment.yaml
 ```
 
 ## Lesson 7: Pod Disruption Budgets

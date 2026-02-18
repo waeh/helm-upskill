@@ -356,6 +356,12 @@ Named templates (also called "partials") live in `_helpers.tpl` files. The `_` p
 {{- end }}
 ```
 
+**Explanation**: This creates a named template called `"myapp.name"` that can be reused elsewhere. It generates a chart name by:
+- Using `nameOverride` from `values.yaml` if set, otherwise falling back to the chart's name (`.Chart.Name`).
+- Truncating the result to 63 characters (Kubernetes DNS limit).
+- Removing any trailing dashes for clean naming.
+This ensures consistent, valid names across your chart without repeating code.
+
 ### include — Call a named template (preferred)
 
 ```yaml
