@@ -133,7 +133,7 @@ The umbrella chart's `templates/` directory should contain:
 - Conditional logic for enabling/disabling components
 - Any cross-component resources (like network policies)
 
-For now, you can remove the default templates from `umbrella/templates/` since the umbrella won't deploy anything directly.
+For now, you can remove the default templates from `umbrella/templates/`, except `_helpers.tpl` since the umbrella won't deploy anything directly.
 
 ### Step 5: Test with helm template
 ```bash
@@ -148,7 +148,7 @@ helm template myapp-release .
 ### Lets compare umbrella and sub-chart 
 
 ```bash
-helm template umbrella . > umbrella-output.yaml && helm template myapp ./charts/myapp > myapp-output.yaml && diff -u umbrella-output.yaml myapp-output.yaml
+helm template umbrella . > umbrella-output.yaml && helm template myapp ./charts/myapp > myapp-output.yaml && diff -u myapp-output.yaml umbrella-output.yaml
 ```
 
 ## Lesson 3: Helper Templates and Named Templates
@@ -165,10 +165,6 @@ Helper templates (defined in `_helpers.tpl`) are reusable template snippets that
 ### Basic Helper Template Syntax
 
 ### 1. Helpers templates file
-
-Lets copy the _helpers.tpl file in myapp templated and into a newly create _helpers.tpl file in umbrella templates.
-
-Lets replace the name myapp with umbrella in the _helpers.tpl file.
 
 In the expansion of the .Chart name and in the generation of a full name
 the generated _helpers.tpl file carries a template variable from the values file for name and full name override, add those to the umbrella values:
@@ -195,7 +191,7 @@ data:
     key: value    
 ```
 
-Lets run the helm command again to verify that our resource is templated correctly using the newly created reusable template naming:
+Lets run the helm command again to verify that our resource is templated correctly using the reusable template naming:
 
 ```bash 
 helm template umbrella . 
@@ -213,7 +209,7 @@ Insert:
 ```yaml
 environment: {{ .Values.global.environment }}
 ```
-In the newly create _helpers.tpl, in the labels section.
+In the _helpers.tpl, in the labels section.
 
 Verify with:
 ```bash 
@@ -223,7 +219,7 @@ helm template umbrella .
 Since we also want to use the environment label in myapp sub chart aswell, add the same label to the myapp _helpers.tpl file, but we also want the chart to be able
 to be deployed independently and we need to guard for the non-existence of a global value:
 ```yaml
-{{- if .Values.global }}
+{{- if .Values.global -}}
 environment: {{ .Values.global.environment }}
 {{- else }}
 environment: {{ .Values.environment }}
