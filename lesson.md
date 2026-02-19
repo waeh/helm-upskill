@@ -546,7 +546,7 @@ spec:
 
 ```bash
 # Render the PDB:
-helm template umbrella . -s charts/myapp/templates/poddisruptionbudget.yaml
+helm template myapp ./charts/myapp -s templates/poddisruptionsbudget.yaml 
 ```
 
 ## Lesson 8: Push helm charts to repos
